@@ -1,0 +1,188 @@
+{
+  "name": "nuxtblog-plugin-comment-guard",
+  "version": "1.0.0",
+  "description": "评论防护：垃圾过滤 + 速率限制 + AI 审核 + Webhook 通知。展示 filter chain + pipeline + webhook + 插件间通信",
+  "author": "nuxtblog",
+  "license": "MIT",
+  "keywords": [
+    "comment",
+    "spam",
+    "moderation",
+    "nuxtblog-plugin"
+  ],
+  "private": true,
+  "plugin": {
+    "title": "评论防护",
+    "icon": "i-tabler-shield-check",
+    "minHostVersion": "2.0.0",
+    "sdkVersion": "0.1.0",
+    "trust_level": "official",
+    "entry": "index.js",
+    "activationEvents": [
+      "onEvent:comment.*"
+    ],
+    "capabilities": {
+      "store": {
+        "read": true,
+        "write": true
+      },
+      "ai": true,
+      "http": {
+        "allow": [
+          "hooks.slack.com",
+          "discord.com"
+        ],
+        "timeout_ms": 10000
+      }
+    },
+    "settings": [
+      {
+        "key": "rate_limit",
+        "label": "速率限制（每分钟）",
+        "type": "number",
+        "default": 5,
+        "description": "同一 IP 每分钟最多评论数，超出直接拒绝",
+        "group": "速率限制"
+      },
+      {
+        "key": "min_content_length",
+        "label": "最短评论长度",
+        "type": "number",
+        "default": 5,
+        "description": "少于此字数的评论会被拒绝",
+        "group": "内容规则"
+      },
+      {
+        "key": "blocked_words",
+        "label": "屏蔽词（逗号分隔）",
+        "type": "textarea",
+        "default": "",
+        "placeholder": "赌博,代开发票,加微信",
+        "group": "内容规则"
+      },
+      {
+        "key": "ai_review",
+        "label": "启用 AI 审核",
+        "type": "boolean",
+        "default": false,
+        "description": "对疑似垃圾评论进行 AI 二次审核（需要配置 AI 服务）",
+        "group": "AI 审核"
+      },
+      {
+        "key": "ai_threshold",
+        "label": "AI 垃圾阈值",
+        "type": "select",
+        "default": "medium",
+        "options": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "description": "low = 宽松（少误判）；high = 严格（少漏判）",
+        "group": "AI 审核",
+        "showIf": "ai_review === true"
+      },
+      {
+        "key": "notify_webhook",
+        "label": "通知 Webhook URL",
+        "type": "string",
+        "placeholder": "https://hooks.slack.com/services/...",
+        "description": "收到可疑评论时发送通知",
+        "group": "通知"
+      }
+    ],
+    "webhooks": [
+      {
+        "url": "{{settings.notify_webhook}}",
+        "events": [
+          "comment.created"
+        ],
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    ],
+    "pipelines": [
+      {
+        "name": "comment-moderation",
+        "trigger": "comment.created",
+        "steps": [
+          {
+            "type": "condition",
+            "name": "check-if-ai-review-enabled",
+            "if": "ctx.meta.needs_ai_review === true",
+            "then": [
+              {
+                "type": "js",
+                "name": "ai-spam-check",
+                "fn": "pipelineAICheck",
+                "timeout_ms": 15000,
+                "retry": 1
+              }
+            ],
+            "else": [
+              {
+                "type": "js",
+                "name": "log-skip",
+                "fn": "pipelineLogSkip"
+              }
+            ]
+          },
+          {
+            "type": "condition",
+            "name": "check-if-should-notify",
+            "if": "ctx.meta.is_spam === true",
+            "then": [
+              {
+                "type": "webhook",
+                "name": "notify-admin",
+                "url": "{{settings.notify_webhook}}",
+                "headers": {
+                  "Content-Type": "application/json"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "contributes": {
+      "commands": [
+        {
+          "id": "comment-guard:check-stats",
+          "title": "查看防护统计",
+          "icon": "i-tabler-shield-check"
+        }
+      ],
+      "navigation": [
+        {
+          "slot": "admin:sidebar-nav",
+          "title": "评论防护",
+          "icon": "i-tabler-shield-check",
+          "route": "/admin/comment-guard",
+          "order": 70
+        }
+      ]
+    },
+    "routes": [
+      {
+        "method": "GET",
+        "path": "/api/plugin/comment-guard/stats",
+        "fn": "handleGetStats",
+        "auth": "admin",
+        "description": "获取防护统计"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=neutral --format=cjs --target=es2015 --outfile=index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.4",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "@nuxtblog/plugin-sdk": "^0.1.0"
+  }
+}
