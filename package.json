@@ -1,6 +1,6 @@
 {
   "name": "nuxtblog-plugin-comment-guard",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "评论防护：垃圾过滤 + 速率限制 + AI 审核 + Webhook 通知。展示 filter chain + pipeline + webhook + 插件间通信",
   "author": "nuxtblog",
   "license": "MIT",
@@ -14,10 +14,9 @@
   "plugin": {
     "title": "评论防护",
     "icon": "i-tabler-shield-check",
-    "minHostVersion": "2.0.0",
     "sdkVersion": "0.1.0",
     "trust_level": "official",
-    "entry": "index.js",
+    "entry": "dist/index.js",
     "activationEvents": [
       "onEvent:comment.*"
     ],
@@ -175,7 +174,7 @@
     ]
   },
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=neutral --format=cjs --target=es2015 --outfile=index.js",
+    "build": "esbuild src/index.ts --bundle --platform=neutral --format=cjs --target=es2015 --outfile=dist/index.js",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

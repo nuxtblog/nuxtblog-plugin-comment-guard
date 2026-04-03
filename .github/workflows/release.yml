@@ -37,8 +37,8 @@ jobs:
 
       - name: Package dist
         run: |
-          files="package.json index.js"
-          [ -f index.css ] && files="$files index.css"
+          files="package.json dist/index.js"
+          [ -f dist/index.css ] && files="$files dist/index.css"
           zip plugin.zip $files
 
       - name: Create GitHub Release
