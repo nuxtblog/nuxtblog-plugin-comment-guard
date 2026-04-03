@@ -1,6 +1,6 @@
 {
   "name": "nuxtblog-plugin-comment-guard",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "评论防护：垃圾过滤 + 速率限制 + AI 审核 + Webhook 通知。展示 filter chain + pipeline + webhook + 插件间通信",
   "author": "nuxtblog",
   "license": "MIT",
@@ -174,7 +174,7 @@
     ]
   },
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=neutral --format=cjs --target=es2015 --outfile=dist/index.js",
+    "build": "esbuild src/index.ts --bundle --platform=neutral --format=iife --global-name=__plugin --footer:js=\"Object.keys(__plugin).forEach(function(k){this[k]=__plugin[k]})\" --target=es2015 --outfile=dist/index.js",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
