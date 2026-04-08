@@ -34,3 +34,37 @@ jobs:
           gh release create "${{ github.ref_name }}" plugin.zip \
             --title "${{ github.ref_name }}" \
             --generate-notes
+
+  submit-pr:
+    needs: release
+    runs-on: ubuntu-latest
+    if: ${{ secrets.REGISTRY_PAT != '' }}
+    steps:
+      - name: Submit PR to registry
+        env:
+          GH_TOKEN: ${{ secrets.REGISTRY_PAT }}
+        run: |
+          PLUGIN_ID="nuxtblog-plugin-comment-guard"
+          VERSION="${GITHUB_REF_NAME#v}"
+          REGISTRY="nuxtblog/registry"
+          BRANCH="update-${PLUGIN_ID}-${VERSION}"
+          FILE="plugins/nuxtblog_${PLUGIN_ID}.json"
+          TODAY=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${REGISTRY}.git" registry
+          cd registry
+
+          sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" "$FILE"
+          sed -i "s/\"updated_at\": \".*\"/\"updated_at\": \"${TODAY}\"/" "$FILE"
+
+          git checkout -b "$BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$FILE"
+          git commit -m "update ${PLUGIN_ID} to v${VERSION}"
+          git push origin "$BRANCH"
+
+          gh pr create --repo "$REGISTRY" \
+            --head "$BRANCH" \
+            --title "update ${PLUGIN_ID} to v${VERSION}" \
+            --body "Automated release from [${PLUGIN_ID} ${GITHUB_REF_NAME}](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME})"
