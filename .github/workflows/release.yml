@@ -38,12 +38,12 @@ jobs:
   submit-pr:
     needs: release
     runs-on: ubuntu-latest
-    if: ${{ secrets.REGISTRY_PAT != '' }}
     steps:
       - name: Submit PR to registry
         env:
           GH_TOKEN: ${{ secrets.REGISTRY_PAT }}
         run: |
+          if [ -z "$GH_TOKEN" ]; then echo "REGISTRY_PAT not set, skipping"; exit 0; fi
           PLUGIN_ID="nuxtblog-plugin-comment-guard"
           VERSION="${GITHUB_REF_NAME#v}"
           REGISTRY="nuxtblog/registry"
