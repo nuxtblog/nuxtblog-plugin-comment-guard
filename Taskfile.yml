@@ -1,0 +1,12 @@
+version: "3"
+
+tasks:
+  default:
+    desc: Run checks
+    cmds:
+      - task: check
+
+  check:
+    desc: Run Go vet
+    cmds:
+      - go vet ./...

@@ -1,0 +1,44 @@
+id: nuxtblog-plugin-comment-guard
+title: 评论防护
+version: 2.0.0
+icon: i-tabler-shield-check
+author: nuxtblog
+description: 评论反垃圾：屏蔽词、速率限制、AI 审核
+license: MIT
+trust_level: official
+type: builtin
+runtime: compiled
+bundled: true
+sdk_version: "1.0.0"
+
+settings:
+  - key: blocked_words
+    label: 屏蔽词
+    type: textarea
+    description: "逗号分隔，如: spam,广告,代开"
+    group: 内容过滤
+
+  - key: min_content_length
+    label: 最小评论长度
+    type: number
+    default: 5
+    group: 内容过滤
+
+  - key: rate_limit
+    label: 每分钟最大评论数
+    type: number
+    default: 5
+    group: 速率限制
+
+  - key: ai_review
+    label: 启用 AI 审核
+    type: boolean
+    default: false
+    description: 非中文且含链接的评论标记为需 AI 审核
+    group: AI
+
+routes:
+  - method: GET
+    path: /api/plugin/comment-guard/stats
+    auth: admin
+    description: 获取评论防护统计
