@@ -22,9 +22,13 @@ jobs:
           go-version-file: go.mod
 
       - name: Remove local replace & resolve module
+        env:
+          GONOSUMCHECK: github.com/nuxtblog/nuxtblog
+          GONOSUMDB: github.com/nuxtblog/nuxtblog
+          GOFLAGS: -mod=mod
         run: |
-          go mod edit -dropreplace github.com/nuxtblog/nuxtblog
-          GONOSUMCHECK=github.com/nuxtblog/nuxtblog GONOSUMDB=github.com/nuxtblog/nuxtblog GOFLAGS=-mod=mod go get github.com/nuxtblog/nuxtblog@main
+          sed -i '/^replace github.com\/nuxtblog\/nuxtblog/d' go.mod
+          go get github.com/nuxtblog/nuxtblog@main
           go mod tidy
 
       - name: Check
