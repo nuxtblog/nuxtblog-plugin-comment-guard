@@ -24,7 +24,8 @@ jobs:
       - name: Remove local replace & resolve module
         run: |
           go mod edit -dropreplace github.com/nuxtblog/nuxtblog
-          GONOSUMCHECK=github.com/nuxtblog/nuxtblog GOFLAGS=-mod=mod go mod tidy
+          GONOSUMCHECK=github.com/nuxtblog/nuxtblog GONOSUMDB=github.com/nuxtblog/nuxtblog GOFLAGS=-mod=mod go get github.com/nuxtblog/nuxtblog@main
+          go mod tidy
 
       - name: Check
         run: go vet ./...
