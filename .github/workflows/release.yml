@@ -38,123 +38,20 @@ jobs:
   submit-pr:
     needs: release
     runs-on: ubuntu-latest
+
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Submit PR to registry
         env:
           GH_TOKEN: ${{ secrets.REGISTRY_PAT }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then echo "REGISTRY_PAT not set, skipping"; exit 0; fi
-          PLUGIN_ID="nuxtblog-plugin-comment-guard"
-          VERSION="${GITHUB_REF_NAME#v}"
-          REGISTRY="nuxtblog/registry"
-          BRANCH="update-${PLUGIN_ID}-${VERSION}"
-          FILE="plugins/nuxtblog_${PLUGIN_ID}.json"
-          TODAY=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-
-          git clone "https://x-access-token:${GH_TOKEN}@github.com/${REGISTRY}.git" registry
-          cd registry
-
-          sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" "$FILE"
-          sed -i "s/\"updated_at\": \".*\"/\"updated_at\": \"${TODAY}\"/" "$FILE"
-
-          git checkout -b "$BRANCH"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$FILE"
-          git commit -m "update ${PLUGIN_ID} to v${VERSION}"
-          git push origin "$BRANCH"
-
-          gh pr create --repo "$REGISTRY" \
-            --head "$BRANCH" \
-            --title "update ${PLUGIN_ID} to v${VERSION}" \
-            --body "Automated release from [${PLUGIN_ID} ${GITHUB_REF_NAME}](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME})"
-
-  submit-pr:
-    needs: release
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Clone registry & generate JSON
-        env:
-          GH_TOKEN: ${{ secrets.REGISTRY_PAT }}
-        run: |
-          if [ -z "$GH_TOKEN" ]; then echo "REGISTRY_PAT not set, skipping"; exit 0; fi
-          pip install pyyaml -q
-          git clone "https://x-access-token:${GH_TOKEN}@github.com/nuxtblog/registry.git" registry
-
-          python3 <<'PYEOF'
-import yaml, json, os
-
-version = os.environ["GITHUB_REF_NAME"].lstrip("v")
-repo = os.environ["GITHUB_REPOSITORY"]
-owner = repo.split("/")[0]
-today = os.popen("date -u +%Y-%m-%dT%H:%M:%SZ").read().strip()
-
-with open("plugin.yaml") as f:
-    p = yaml.safe_load(f)
-
-plugin_id = p["id"]
-file_path = f"plugins/{owner}_{plugin_id}.json"
-full_path = os.path.join("registry", file_path)
-
-existing = {}
-if os.path.exists(full_path):
-    with open(full_path) as f:
-        existing = json.load(f)
-
-tags = p.get("tags", existing.get("tags", []))
-if isinstance(tags, str):
-    tags = [t.strip() for t in tags.split(",")]
-
-data = {
-    "name": plugin_id,
-    "title": p.get("title", ""),
-    "description": p.get("description", ""),
-    "version": version,
-    "author": p.get("author", ""),
-    "icon": p.get("icon", ""),
-    "repo": repo,
-    "homepage": f"https://github.com/{repo}",
-    "tags": tags,
-    "type": p.get("type", "js"),
-    "runtime": p.get("runtime", "interpreted"),
-    "is_official": p.get("trust_level") == "official",
-    "license": p.get("license", "MIT"),
-    "sdk_version": p.get("sdk_version", "1.0.0"),
-    "trust_level": p.get("trust_level", "community"),
-    "capabilities": existing.get("capabilities", []),
-    "features": existing.get("features", []),
-    "published_at": existing.get("published_at", today),
-    "updated_at": today,
-}
-
-with open(full_path, "w") as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
-    f.write("\n")
-
-with open(os.environ["GITHUB_ENV"], "a") as env:
-    env.write(f"PLUGIN_ID={plugin_id}\n")
-    env.write(f"REGISTRY_FILE={file_path}\n")
-PYEOF
-
-      - name: Create PR
-        env:
-          GH_TOKEN: ${{ secrets.REGISTRY_PAT }}
-        run: |
-          if [ -z "$GH_TOKEN" ]; then exit 0; fi
-          VERSION="${GITHUB_REF_NAME#v}"
-          BRANCH="update-${PLUGIN_ID}-${VERSION}"
-
-          cd registry
-          git checkout -b "$BRANCH"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$REGISTRY_FILE"
-          git commit -m "update ${PLUGIN_ID} to v${VERSION}"
-          git push origin "$BRANCH"
-
-          gh pr create --repo "nuxtblog/registry" \
-            --head "$BRANCH" \
-            --title "update ${PLUGIN_ID} to v${VERSION}" \
-            --body "Automated release from [${PLUGIN_ID} ${GITHUB_REF_NAME}](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME})"
+          if [ -z "$GH_TOKEN" ]; then
+            echo "REGISTRY_PAT not set, skipping PR submission"
+            exit 0
+          fi
+          node .github/scripts/submit-pr.mjs
