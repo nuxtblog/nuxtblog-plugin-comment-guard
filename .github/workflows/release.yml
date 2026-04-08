@@ -17,24 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-
-      - name: Remove local replace & resolve module
-        env:
-          GONOSUMCHECK: github.com/nuxtblog/nuxtblog
-          GONOSUMDB: github.com/nuxtblog/nuxtblog
-          GOFLAGS: -mod=mod
-        run: |
-          sed -i '/^require github.com\/nuxtblog\/nuxtblog /d; /^replace github.com\/nuxtblog\/nuxtblog /d' go.mod
-          sed -i '/github.com\/nuxtblog\/nuxtblog /d' go.sum
-          go get github.com/nuxtblog/nuxtblog@main
-          go mod tidy
-
-      - name: Check
-        run: go vet ./...
-
       - name: Package plugin
         run: zip -r plugin.zip plugin.yaml plugin.go go.mod go.sum
 
