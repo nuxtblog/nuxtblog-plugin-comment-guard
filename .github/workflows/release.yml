@@ -27,7 +27,8 @@ jobs:
           GONOSUMDB: github.com/nuxtblog/nuxtblog
           GOFLAGS: -mod=mod
         run: |
-          sed -i '/github.com\/nuxtblog\/nuxtblog/d' go.mod go.sum
+          sed -i '/^require github.com\/nuxtblog\/nuxtblog /d; /^replace github.com\/nuxtblog\/nuxtblog /d' go.mod
+          sed -i '/github.com\/nuxtblog\/nuxtblog /d' go.sum
           go get github.com/nuxtblog/nuxtblog@main
           go mod tidy
 
