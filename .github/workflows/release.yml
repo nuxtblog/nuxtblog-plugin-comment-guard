@@ -21,6 +21,11 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Remove local replace & resolve module
+        run: |
+          go mod edit -dropreplace github.com/nuxtblog/nuxtblog
+          GONOSUMCHECK=github.com/nuxtblog/nuxtblog GOFLAGS=-mod=mod go mod tidy
+
       - name: Check
         run: go vet ./...
 
