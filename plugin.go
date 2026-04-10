@@ -12,7 +12,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	eng "github.com/nuxtblog/nuxtblog/internal/pluginsys"
 	pluginsdk "github.com/nuxtblog/nuxtblog/sdk"
 )
 
@@ -139,19 +138,25 @@ func (p *CommentGuard) Routes(r pluginsdk.RouteRegistrar) {
 // ─── AI check (called asynchronously by pipeline system) ────────────────────
 
 func (p *CommentGuard) AICheck(content, authorName string) (isSpam bool, verdict string) {
-	result, err := eng.CallAIService(context.Background(), "polish", map[string]any{
-		"content": fmt.Sprintf("判断以下评论是否是垃圾评论。回复 \"spam\" 或 \"not_spam\"：\n\n%s", content),
+	if p.ctx.AI == nil {
+		return false, ""
+	}
+	resp, err := p.ctx.AI.Generate(context.Background(), pluginsdk.AIRequest{
+		Messages: pluginsdk.Messages(
+			pluginsdk.RoleSystem, "你是一个评论审核助手。判断以下评论是否是垃圾评论。只回复 \"spam\" 或 \"not_spam\"，不要输出其他内容。",
+			pluginsdk.RoleUser, content,
+		),
 	})
 	if err != nil {
 		return false, ""
 	}
-	lower := strings.ToLower(result)
+	lower := strings.ToLower(resp.Text)
 	isSpam = strings.Contains(lower, "spam") && !strings.Contains(lower, "not_spam")
 	if isSpam {
 		p.ctx.Log.Warn(fmt.Sprintf("AI flagged comment as spam: \"%s...\"", truncateStr(content, 50)))
 		p.recordBlock("ai_spam")
 	}
-	return isSpam, result
+	return isSpam, resp.Text
 }
 
 // ─── Route Handler ──────────────────────────────────────────────────────────
