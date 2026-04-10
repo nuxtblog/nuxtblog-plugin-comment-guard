@@ -1,6 +1,6 @@
 id: nuxtblog-plugin-comment-guard
 title: 评论防护
-version: 2.0.2
+version: 2.0.3
 icon: i-tabler-shield-check
 author: nuxtblog
 description: 评论反垃圾：屏蔽词、速率限制、AI 审核

@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -71,19 +70,11 @@ func (p *CommentGuard) Filters() []pluginsdk.FilterDef {
 					return
 				}
 
-				// 4) Too many links
-				linkCount := len(regexp.MustCompile(`https?://`).FindAllString(content, -1))
-				if linkCount > 3 {
-					p.recordBlock("too_many_links")
-					fc.Abort("评论包含过多链接")
-					return
-				}
-
-				// 5) Mark for AI review if needed
+				// 4) AI review — all comments go through AI when enabled
 				if p.getBool("ai_review") {
-					hasChinese := regexp.MustCompile(`[\x{4e00}-\x{9fff}]`).MatchString(content)
-					if !hasChinese && linkCount > 0 {
-						fc.Meta["needs_ai_review"] = true
+					if isSpam, _ := p.AICheck(content, ""); isSpam {
+						fc.Abort("AI 检测到疑似垃圾评论")
+						return
 					}
 				}
 
